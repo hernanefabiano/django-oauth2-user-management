@@ -1,0 +1,4 @@
+.env
+*.sublime*
+db.sqlite3
+*.pyc
