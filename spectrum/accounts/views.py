@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login
 from django.conf import settings
 from django.utils import timezone
 
@@ -28,9 +28,12 @@ class UserAuthenticationView(APIView):
     permission_classes = (AllowAny, )
 
     def post(self, request, pk=None):
-        authentication_status = ''
+        authentication_status = None
+        bearer_token = None
+        expired_token = False
         username = request.data.get('username', None)
         password = request.data.get('password', None)
+
         if None in [username, password]:
             return Response('Username/Password is required.', status.HTTP_401_UNAUTHORIZED)
 
@@ -42,23 +45,26 @@ class UserAuthenticationView(APIView):
             else:
                 authentication_status = "Your email and/or password were incorrect."
 
-            if authentication_status:
+            if authentication_status is not None:
                 return Response(authentication_status, status=status.HTTP_401_UNAUTHORIZED)
 
             # get registered app to retrived client_id and client_secret key
             registered_app = Application.objects.get(name=settings.OAUTH2_APPLICATION_NAME)
-            authorization = AccessToken.objects.filter(user=user,
-                    application=registered_app).values('token', 'expires')
+            authorization = AccessToken.objects.filter(
+                user=user, application=registered_app).values('token', 'expires')
+
             if authorization:
                 # check if token is already expired.
                 if authorization[0]['expires'] < datetime.now(timezone.utc):
-                    authorization = AccessToken.objects.get_or_create(
-                        user=user, application=registered_app,
-                        expires=datetime.now() + timedelta(days=5), token=generate_token(request)
-                    )
-                    bearer_token = authorization[0]
+                    expired_token = True
                 else:
                     bearer_token = authorization[0]['token']
+            
+            if expired_token:
+                bearer_token, _ = AccessToken.objects.get_or_create(
+                    user=user, application=registered_app,
+                    expires=datetime.now() + timedelta(days=5), token=generate_token(request)
+                )
 
             return Response({'Authorization': 'Bearer {}'.format(bearer_token)})
 
