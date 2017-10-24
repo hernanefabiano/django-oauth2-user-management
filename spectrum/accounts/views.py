@@ -71,6 +71,7 @@ class UserAccountViewSet(viewsets.ModelViewSet):
     A simple ModelViewSet for display and manage accounts of the DRF.
     Implement oauth2 authentication for authentication/authorization.
     """
+    serializer_class = UserSerializer
     permission_classes = (IsStaffOrAuthenticatedUser,)
 
     def get_object(self, queryset=None):
