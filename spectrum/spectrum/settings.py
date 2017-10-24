@@ -44,7 +44,6 @@ INSTALLED_APPS = (
     'oauth2_provider',
     'rest_framework',
     'accounts',
-
 )
 
 MIDDLEWARE_CLASSES = (
@@ -58,13 +57,12 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.security.SecurityMiddleware',
 )
 
+OAUTH2_APPLICATION_NAME = 'users'
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
     ),
-    # 'DEFAULT_PERMISSION_CLASSES': (
-    #     'rest_framework.permissions.IsAuthenticated',
-    # )
 }
 
 ROOT_URLCONF = 'spectrum.urls'
@@ -90,15 +88,14 @@ WSGI_APPLICATION = 'spectrum.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'spectrum',                   # Or path to database file if using sqlite3.
-        'USER': 'root',                       # Not used with sqlite3.
-        'PASSWORD': '',                       # Not used with sqlite3.
-        'HOST': '127.0.0.1',                  # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '3306',                       # Set to empty string for default. Not used with sqlite3.
+        'ENGINE': 'django.db.backends.mysql',  # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': 'spectrum',                    # Or path to database file if using sqlite3.
+        'USER': 'root',                        # Not used with sqlite3.
+        'PASSWORD': '',                        # Not used with sqlite3.
+        'HOST': '127.0.0.1',                   # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': '3306',                        # Set to empty string for default. Not used with sqlite3.
     }
 }
 

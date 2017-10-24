@@ -1,11 +1,28 @@
+from __future__ import absolute_import
+
 from rest_framework import permissions
 
 
-class IsStaffOrTargetUser(permissions.BasePermission):
+class IsStaffOrAuthenticatedUser(permissions.BasePermission):
+
     def has_permission(self, request, view):
-        # allow user to list all users if logged in user is staff
-        return view.action == 'retrieve' or request.user.is_staff
+        # Only authenticated users or admin account will be able to retrieve
+        # user details and make adjustment to user object
+        if view.action in ['list', 'create']:
+            return True
+        elif view.action in ['retrieve', 'update', 'partial_update', 'destroy']:
+            return request.user.is_authenticated()
+        else:
+            return False
 
     def has_object_permission(self, request, view, obj):
-        # allow logged in user to view own details, allows staff to view all records
-        return request.user.is_staff or obj == request.user
+        # Only authenticated users or admin account will be able to retrieve.
+        # login users will be able to change their own password.
+        if view.action == 'retrieve':
+            return request.user.is_authenticated()
+        elif view.action == 'partial_update':
+            return request.user.is_authenticated() and obj == request.user
+        elif view.action == 'destroy':
+            return request.user.is_authenticated() and request.user.is_superuser
+        else:
+            return False
