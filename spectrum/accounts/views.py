@@ -3,14 +3,15 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate
 from django.conf import settings
 from django.utils import timezone
 
-from rest_framework import viewsets
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
 from rest_framework import authentication
+from rest_framework.decorators import detail_route
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
+from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -19,7 +20,7 @@ from oauthlib.common import generate_token
 
 from datetime import datetime, timedelta
 
-from .serializer import UserSerializer, UserActivateSerializer, UserPasswordResetSerializer
+from .serializer import UserSerializer, UserPasswordResetSerializer
 from .permissions import IsStaffOrAuthenticatedUser
 
 
@@ -59,14 +60,17 @@ class UserAuthenticationView(APIView):
                     expired_token = True
                 else:
                     bearer_token = authorization[0]['token']
-            
+
             if expired_token:
                 bearer_token, _ = AccessToken.objects.get_or_create(
                     user=user, application=registered_app,
                     expires=datetime.now() + timedelta(days=5), token=generate_token(request)
                 )
 
-            return Response({'Authorization': 'Bearer {}'.format(bearer_token)})
+            return Response({
+                'ActivateAccount': 'http://localhost:8000/api/users/{}/activate'.format(user.pk),
+                'Authorization': 'Bearer {}'.format(bearer_token)
+            })
 
         except Exception as e:
             return Response(e.message, status=status.HTTP_400_BAD_REQUEST)
@@ -113,29 +117,23 @@ class UserAccountViewSet(viewsets.ModelViewSet):
         serializer = UserSerializer(user)
         return Response(serializer.data)
 
+    @detail_route(methods=['patch'])
+    def activate(self, request, pk=None):
+        user = get_object_or_404(self.get_queryset(pk))
+        if user.is_active:
+            return Response('User account({}) status is already active.'.format(
+                user.username), status=status.HTTP_200_OK
+            )
+        user.is_active = True
+        user.save()
+        return Response('User account({}) now active.'.format(user.username), status=status.HTTP_205_RESET_CONTENT)
+
     def partial_update(self, request, pk=None):
         user = get_object_or_404(self.get_queryset(pk))
-        if request.data.get('newpassword'):
-            serializer = UserPasswordResetSerializer(data=request.data)
-            if serializer.is_valid():
-                if user.check_password(serializer.data.get("password")):
-                    user.set_password(serializer.data.get("newpassword"))
-                    user.save()
-                    return Response("Password reset successfully.", status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        elif request.data.get('is_active'):
-            if user.is_active:
-                return Response('User account({}) status is active.'.format(
-                    user.username), status=status.HTTP_200_OK
-                )
-
-            serializer = UserActivateSerializer(data=request.data)
-            if serializer.is_valid():
-                if serializer.data['is_active'] and serializer.data['is_active'] == 1:
-                    user.is_active = True
-                    user.save()
-                    return Response('User account now have an active status', status=status.HTTP_205_RESET_CONTENT)
-
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response('Unknown action request', status=status.HTTP_400_BAD_REQUEST)
+        serializer = UserPasswordResetSerializer(data=request.data)
+        if serializer.is_valid():
+            if user.check_password(serializer.data.get("password")):
+                user.set_password(serializer.data.get("newpassword"))
+                user.save()
+                return Response("Password reset successfully.", status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

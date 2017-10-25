@@ -49,10 +49,10 @@ class UserSerializer(serializers.ModelSerializer):
 
     def send_registration_mail(self, validated_data):
         first_name = validated_data.get('first_name', 'New User')
-        token_url = 'http://localhost:8000/api/get-token?username={}'.format(validated_data.get('email'))
+        token_url = 'http://localhost:8000/api/login/'
         message_body = '''
             Hi {},
-            Please access the link below to activate your account.
+            Please access the link below to login and use the token to activate your account.
             Activation url: {}.'''.format(first_name, token_url)
 
         send_mail(
