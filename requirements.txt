@@ -4,7 +4,7 @@ configparser==3.5.0
 Django==1.10.8
 django-braces==1.11.0
 django-oauth-toolkit==1.0.0
-djangorestframework==3.6.3
+djangorestframework==3.11.2
 enum34==1.1.6
 flake8==3.4.1
 idna==2.6
